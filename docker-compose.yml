@@ -1,0 +1,45 @@
+version: '3.5'
+
+volumes:
+  mysql:
+    driver: local
+
+services:
+    go:
+      build: ./app
+      volumes:
+        - ./app:/go/src/app
+      working_dir: /go/src/app
+      environment:
+        TZ: Asia/Tokyo
+      tty: true
+      depends_on:
+        - mysql
+#      security_opt:
+#        - apparmor:unconfined
+#      cap_add:
+#        - SYS_PTRACE
+
+    mysql:
+      build: ./mysql
+      platform: linux/amd64 # for M1 tip
+      environment:
+        - TZ=Asia/Tokyo
+        - MYSQL_DATABASE=ent
+        - MYSQL_USER=ent
+        - MYSQL_PASSWORD=ent
+        - MYSQL_ROOT_PASSWORD=root
+#      restart: always
+      ports:
+        - "3306:3306"
+      volumes:
+        - ~/.docker/go-ent/mysql/data:/var/lib/mysql
+        - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
+    nginx:
+        container_name: "nginx"
+        build: ./nginx
+        ports:
+          - "8000:80"
+        depends_on:
+          - go
